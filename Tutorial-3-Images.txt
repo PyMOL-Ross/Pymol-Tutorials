@@ -1,0 +1,506 @@
+# When preparing images, write a script (copy and paste commands) to a 
+# text file, to allow you to recreate the image again in the future!!
+
+reinitialize 
+fetch 2chb, async=0
+run niceify2.pml
+
+dist hbsc, organic, sc, mode=2
+dist hbbb, organic, bb, mode=2
+color cyan, hbsc
+color magenta, hbbb
+hide labels
+
+# key command
+get_view
+
+set_view (\
+    -0.253887773,    0.819441199,    0.513858318,\
+     0.903327703,    0.390773684,   -0.176850557,\
+    -0.345724672,    0.419285655,   -0.839441359,\
+     0.000526633,   -0.000106305,  -72.495323181,\
+    27.612598419,   45.513324738,   19.832817078,\
+    54.909694672,   90.036903381,  -20.000000000 )
+
+draw			# quick anti-aliasing
+get antialias
+set antialias, 2
+set antialias, 1
+
+set_view (\
+     0.804116547,   -0.290881038,    0.518437326,\
+    -0.557278991,   -0.672452390,    0.487060457,\
+     0.206952378,   -0.680573046,   -0.702836454,\
+     0.000325076,    0.000658320, -103.680000305,\
+    -4.907163143,   35.938167572,   15.877665520,\
+    72.554985046,  134.784973145,  -20.000000000 )
+ray			# add shadows, white alpha-channel
+
+# ray will use your current window dimensions, however . . .
+ray x, y 	(pixels)
+ray 2400, 2400
+ray 1200, 2400
+ray 2400, 1200
+
+#####################################
+
+https://pymolwiki.org/index.php/Publication_Quality_Images
+
+How do I create a X DPI image using PyMol's 'ray' command?
+ray 2400, 2400
+
+rayVal = inches * DPI
+therefore
+
+ray 576,576   # 8inch * 72dpi
+save ray576.png
+ray 800,800   # 8inch * 100dpi; or a 4inch * 200 DPI image; or 1x800.
+save ray800.png
+ray 2400,2400 # 8inch * 300dpi; 6"x400dpi, etc...
+save ray2400.png
+
+Then use graphics software to scale to an appropriate dimension
+I recommend the free software for image manipulation
+Gimp
+Inkscape
+Fiji (is just imageJ)
+
+ALTERNATIVELY
+https://pymolwiki.org/index.php/Png # however this is a little redundent
+
+ray first!
+png dpi150, dpi=150
+png dpi300, dpi=300
+png dpi600, dpi=600
+
+# combine both methods
+png dpi300-ex, width=2400, height=2400, dpi=300, ray=1
+
+#####################################
+
+Blimey! my ray command takes a long time!!
+
+rein 
+fetch 1nqu, type=pdb1 
+split_states 1nqu
+bg_color white
+orient
+util.cbc
+remove ! polymer
+
+ray
+	Ray: render time: 45.55 sec. = 79.0 frames/hour (258.18 sec. accum.).
+
+# use more memory for image processing? (make sure you don’t crash it!)
+get hash_max
+	get: hash_max = 100
+
+set hash_max, 200
+ray 
+	Ray: render time: 15.56 sec. = 231.4 frames/hour (273.74 sec. accum.).
+
+set hash_max, 400
+ray 
+	Ray: render time: 12.10 sec. = 297.6 frames/hour (285.84 sec. accum.).
+
+set hash_max, 800
+ray 
+	Ray: render time: 15.51 sec. = 232.2 frames/hour (301.34 sec. accum.).
+
+
+
+#####################################
+# Image options
+#####################################
+reinitialize
+fetch 1nqu, async=0
+run ../0-Setup/niceify2.pml
+set hash_max, 400
+select none
+
+What are the defaults
+ray
+
+get spec_reflect
+get ray_shadows
+get ray_trace_color
+get ray_trace_fog
+get depth_cue
+get ray [tab]
+
+ray
+
+set spec_reflect, off
+set ray_shadows, off
+set ray_trace_color, black
+set ray_trace_fog, 0
+set ray_opaque_background, on
+
+ray
+
+#####################################
+# Ray tracing modes
+#####################################
+reinitialize
+fetch 1nqu, async=0
+run ../0-Setup/niceify2.pml
+set hash_max, 400
+select none
+
+get ray_trace_mode
+
+set ray_trace_mode, 0
+ray 
+
+
+set ray_trace_mode, 1	# line thickness independent of magnification
+ray 			# this is nice when zoomed in, but thick lines at low mag
+ray 2400, 2400		# line thickness is dependent on resolution
+
+# want to tweek line thickness?
+get ray_trace_gain
+set ray_trace_gain, 1		# show example, dont mess too much!
+set ray_trace_gain, 0.12
+
+set ray_trace_mode, 2
+ray
+ray 2400, 2400
+
+set ray_trace_mode, 3
+ray
+ray 2400, 2400
+
+###########################
+# Interested in sticks
+###########################
+reinitialize
+fetch 1nqu, async=0
+run ../0-Setup/niceify2.pml
+set hash_max, 400
+select none
+
+
+get valence
+as sticks
+
+set valence, 0
+set valence, 1
+
+
+get stick_radius
+set stick_radius = 1
+
+set valence, 0
+util.cbc
+set stick_radius = 1.5
+set stick_radius = 2
+
+also available
+get sphere_scale
+
+###########################
+# Interested in cartoons
+###########################
+reinitialize
+fetch 1nqu, async=0
+run ../0-Setup/niceify2.pml
+set hash_max, 400
+select none
+
+as cartoon
+cartoon loop
+cartoon rect
+cartoon oval
+cartoon tube
+cartoon automatic
+
+# dependent on pymols internal validation of secondary structure
+# not always correct
+
+select c. C & i. 85-109
+alter c. C & i. 85-109, ss='L'
+as cartoon
+
+set cartoon_fancy_helices=1
+set cartoon_flat_sheets = 0
+set cartoon_smooth_loops = 1
+
+###########################
+# Interested in topology
+###########################
+as cartoon
+color red, ss h
+color marine, ss s
+color yellow, ss l+''
+set cartoon_smooth_loops = 1
+set cartoon_flat_sheets = 0
+
+
+###########################
+# Interested in surfaces
+###########################
+
+reinitialize
+fetch 1nqu, async=0
+remove solvent + inorganic
+orient 
+bg_color white
+color red, ss h
+color marine, ss s
+color yellow, ss l+''
+as surface
+set_view (\
+     0.545457602,   -0.442487806,    0.711814880,\
+    -0.747303188,    0.127776876,    0.652082741,\
+    -0.379491985,   -0.887624860,   -0.260975480,\
+    -0.000065712,   -0.000067554, -100.300979614,\
+   140.149993896,   11.831371307,  127.861839294,\
+    52.274650574,  148.330902100,  -20.000000000 )
+
+#####   get_view
+set hash_max, 400
+ray
+save 4-Images-RayTracing-surf-norm.png
+
+get spec_power
+set spec_power = 200
+ray
+save 4-Images-RayTracing-surf-sp200.png
+
+get spec_refl
+set spec_refl=1.5
+ray
+save 4-Images-RayTracing-surf-sr1.5.png
+
+get surface_quality
+set surface_quality, 2
+ray
+save 4-Images-RayTracing-surf-sq2.png
+
+# additionally
+set solvent_radius, 2.0
+set surface_solvent = on
+
+###########################################################################################
+https://pymolwiki.org/index.php/Gallery
+#############################################
+#  Show hydrophobic
+#############################################
+
+reinitialize
+fetch 1nqu
+orient 
+bg_color white
+set hash_max, 400
+as cartoon,all
+color gray,all
+remove solvent
+
+select hydrophobes, (r. ala+gly+val+ile+leu+phe+met)
+show spheres, (hydrophobes and (!name c+n+o))
+color orange,hydrophobes
+disable hydrophobes
+show surface, polymer
+set transparency, 0.5
+show sticks, organic
+color black, organic
+
+
+set_view (\
+     0.663258672,    0.559077382,    0.497514009,\
+    -0.666870713,    0.743225574,    0.053842291,\
+    -0.339663506,   -0.367489606,    0.865782797,\
+     0.000000000,    0.000000000, -114.893775940,\
+   161.621994019,   17.474000931,  137.559997559,\
+    66.865669250,  162.921905518,  -20.000000000 )
+
+ray
+png shhy-ray
+
+get spec_power
+get spec_refl
+get surface_quality
+
+
+set spec_power = 1
+set spec_refl= 1
+set surface_quality, 0
+ray
+png shhy-ray110
+
+# 118 sec   # DONT DO THIS ONE!!
+set spec_power = 200
+set spec_refl=1.5
+set surface_quality, 2
+set antialias, 2
+ray 2400
+png shhy-ray112
+
+#############################################
+#  Make Slices
+#############################################
+
+reinitialize
+fetch 1nqu, async=0
+orient 
+bg_color white
+remove solvent
+set hash_max, 400
+
+# must disable depth cue and shadows
+set depth_cue, 0
+set ray_shadows, 0
+set ray_trace_mode, 0
+
+# this controls the z depth of the slice plane
+# (sets it halfway between the clipping planes)
+fraction = 0.42
+view = cmd.get_view()
+near_dist = fraction*(view[16]-view[15])
+far_dist = (view[16]-view[15]) - near_dist
+cmd.clip("near", -near_dist)
+
+# render opaque background image
+as surface
+set ray_interior_color, grey80
+set opaque_background
+set surface_color, white
+ray
+save Images-MakeSlices-image_back.png
+
+cmd.clip("near", near_dist)
+cmd.clip("far", far_dist)
+
+ # render the foreground image
+as cartoon
+util.cbc
+unset opaque_background
+ray
+save Images-MakeSlices-image_front.png
+
+# open Images-MakeSlices*
+
+
+#############################################
+#  Binding Pocket representation
+#############################################
+
+reinitialize
+fetch 1nqu, tmp, async=0
+bg_color white
+remove solvent
+set hash_max, 400
+
+extract prot, polymer
+extract lig, organic
+select bb, bb.
+select sc, sc. + n. ca + PRO/N 
+as cartoon, bb
+show sticks, sc
+util.cbc
+color black, lig
+show sticks, lig
+util.cnc
+
+select lig1, lig & c. A
+
+set surface_carve_cutoff, 4.5
+set surface_carve_selection, lig1
+set surface_carve_normal_cutoff, -0.1
+
+show surface, prot within 8 of lig1
+set two_sided_lighting
+set transparency, 0.5
+orient lig1
+zoom lig1, 2
+
+set surface_color, white
+set surface_type, 2
+distance hbond, lig1, prot, mode=2
+color grey50, hbond
+set ray_shadows, 0
+ray
+png pocket1
+
+#####  a little further out?
+
+zoom lig1, 10
+select pocket2, br. lig1 expand 5
+select pocket, pocket2 & ! name c+o+n + /*//*/PRO`*/N
+delete pocket2
+hide sticks, sc
+hide lines, sc
+show sticks, pocket
+turn z, -45
+turn x, -90
+ray
+png pocket2
+
+#############################################
+#  QuteMol like images
+#############################################
+
+reinitialize
+fetch 1nqu, async=0
+bg_color white
+remove solvent
+set hash_max, 400
+
+set_color oxygen, [1.0,0.4,0.4]
+set_color nitrogen, [0.5,0.5,1.0]
+as spheres
+util.cbaw
+bg white
+set light_count,8
+set spec_count,1
+set shininess, 10
+set specular, 0.25
+set ambient,0
+set direct,0
+set reflect,1.5
+set ray_shadow_decay_factor, 0.1
+set ray_shadow_decay_range, 2
+unset depth_cue
+# for added coolness
+# set field_of_view, 60
+ray
+
+#############################################
+#  David Goodsell like images
+#############################################
+
+reinitialize
+fetch 1nqu, tmp, async=0
+bg_color white
+set hash_max, 400
+
+as sticks
+set valence, 0
+set stick_radius = 1.7
+
+color lightblue, not org
+color magenta, org
+remove solvent
+
+# set the view
+
+set_view (\
+     0.855354905,    0.057524908,    0.514838457,\
+    -0.050117217,    0.998342931,   -0.028284293,\
+    -0.515611708,   -0.001608965,    0.856820703,\
+     0.000006188,   -0.000014648, -238.717636108,\
+   153.867889404,    1.374834061,  136.634002686,\
+   208.820083618,  268.618896484,  -20.000000000 )
+
+# set the lights, ray tracing setttings
+# to get the Goodsell-like rendering
+
+unset specular
+set ray_trace_gain, 0
+set ray_trace_mode, 3
+bg_color white
+set ray_trace_color, black
+unset depth_cue
+ray
+
+

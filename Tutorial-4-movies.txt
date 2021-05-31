@@ -1,0 +1,506 @@
+Lets make a movie!
+
+Additional software
+
+OPTIONAL - For complicated image compilations use ffmpeg 
+This software turns images into movies (ffmpeg is commandline)
+ffmpeg -r 25 -i img%04d.png -f mp4 -q:v 0 -vcodec mpeg4 myVideo.mp4
+
+REQUIRED - Pymol makes BIG movie files.
+This software compresses files without losing resolution (nice GUI)
+Handbrake using RF 24
+
+Links
+https://www.pymolwiki.org/index.php/MovieSchool
+Good but old! (pymol v1.2)
+
+PART 1
+
+##########################################################
+# USING THE GUI TO MAKE A MOVIE
+##########################################################
+rein
+fetch 2chb, async=0
+remove hydrogen
+hide all
+bg_color white
+
+select lig, organic
+select bb, bb.
+select sc, polymer & ! bb + name ca + /*//*/PRO`*/N 
+
+as cartoon, bb
+show sticks, sc + lig
+util.cbc
+color black, lig
+util.cnc
+orient bb
+select none
+
+dist hbbb, org, bb, mode=2
+dist hbsc, org, sc, mode=2
+color grey20, hbbb
+color grey80, hbsc
+hide labels
+
+ok, now we can us the GUI
+
+Movie > Program > Camera loop > Nutate > 30deg.4sec
+Movie > Program > Camera loop > X-roll > 8s
+Movie > Append > 4s
+Movie > FrameRate > 5fps
+
+Movie > Reset
+
+##########################################################
+
+Appending multiple gui camera controls that look good!
+
+orient
+Movie > Program > Camera loop >Nutate > 30deg.4sec
+Movie > Update last program				# if required
+Movie > append > 2s
+
+orient c. D
+Movie > Program > Camera loop > Nutate > 30deg.4sec
+Movie > append > 2s
+
+orient c. D & org
+Movie > Program > Camera loop > Nutate > 30deg.4sec
+Movie > append > 2s
+
+
+##########################################################
+
+HEY!! I want to cycle through my NMR/MD/morph/other states!!
+
+ok, we can use
+
+rein
+fetch 2adt, async=0
+as sticks
+Movies > Program > state loop > Full speed 
+*** Actually, you can just save as movie, as states are present.
+
+HEY!! I want my states to cycle while i move around the structure
+
+Well, you can’t do that in the GUI, sorry! (at least i dont know how)
+
+##########################################################
+
+GUI scenes				# scenes are amazing!
+
+make scenes with
+Scene > Store > F?
+Movie > Program > Scene loop > Nutate > 30deg.4sec
+
+Can be a bit clunky to use but your creative skills can get around this.
+
+
+
+
+PART 2
+
+##########################################################
+Movies on the command line 
+##########################################################
+
+what is a state?
+what is a frame?
+
+# what is mset
+mset 1 x200 		(x[num]) gives appended frames at given state
+
+# if you have states too
+mset 1 -200 		(-[num]) gives movement between states (while moving between frames)
+mset 1 200			([num])  moves straight to numbered state
+
+So, you can make some fancy movies of MD simulations, NMR, morphs!
+
+###################################################
+# what is mview
+https://pymolwiki.org/index.php/Mview
+
+### Ligand zoom
+
+rein
+fetch 1rx1, async=0
+as cartoon
+as sticks, organic
+
+mset 1 x150
+
+orient
+mview store, 1
+mview store, 50
+orient organic
+mview store, 100
+mview store, 150
+
+mplay
+
+# commands don't have to be in sequencial order.
+
+rein
+fetch 1rx1, async=0
+as cartoon
+as sticks, organic
+
+mset 1 x150
+
+orient
+mview store, 1
+mview store, 150
+orient organic
+mview store, 50
+mview store, 100
+
+mplay
+
+### 360° rotation
+
+rein
+fetch 1rx1, async=0
+as cartoon
+as sticks, organic
+
+mset 1 x180
+mview store, 1
+mview store, 180
+turn y, 120
+mview store, 60, power=1.0
+turn y, 120
+mview store, 120, power=1.0
+
+mplay
+
+
+###################################################
+Moving through states while moving the camera
+
+rein
+load structures.pse	# load a file with states for this one.
+remove hydrogen
+hide all
+bg_color white
+
+select lig, organic
+select bb, bb.
+select sc, sc. + name ca + /*//*/PRO`*/N 
+
+as cartoon, bb
+set cartoon_gap_cutoff, 0
+show sticks, sc + lig
+util.cbc
+color black, lig
+util.cnc
+orient bb
+select none
+
+dss
+
+#reset the movie!
+
+mview reset
+orient
+mset 1 x30 -150 x20
+mview interpolate
+mview smooth
+
+mview store, 1
+turn x, -90
+mview store, 50
+
+mview store, 198
+
+###################################################
+a little more involved
+
+mview and mset together
+
+mview reset
+orient
+mset 1 x50 -500 x50 
+mview interpolate
+mview smooth
+
+mview store, 1
+turn x, -90
+mview store, 50
+
+mview store, 150		
+turn x, 90
+mview store, 250
+
+mview store, 350
+turn y, 90
+mview store, 450
+mview store, 550
+
+
+
+ridiculous mset
+mset 1 x200 -78 -2 -78 x200 79 -156 157 x200 -234 235 x400 
+# mset 1 x200 makes the first state last for 200 frames
+# -78 -2 takes us FROM state 1 to 78, then back to frame 2.  
+# I've repeated this for dramatic effect.
+# Then we pause at 78 for 200 frames, 
+# then go from 79-156 and pause at 157 for 200 frames, etc.
+
+You MUST have the full number of mset frames declared utilised via mview!
+	Otherwise the interpolation will move back to the beggining at the end of the video
+	Alternatively, if you are making a looping video, you may want to allow this to happen.
+
+PART 3
+
+###################################################
+Movies on the command line with state control and morph
+###################################################
+
+'morph' - available on pymol-2.x - transitions between structures
+
+'create' seperates and merges objects and states
+
+rein
+load reduced.pdb 		# load a file with states for this one.
+remove hydrogen
+hide all
+bg_color white
+
+select lig, organic
+select bb, polymer & name c+o+n+ca
+select sc, sc. + name ca + /*//*/PRO`*/N 
+
+as cartoon, bb
+show sticks, sc + lig
+util.cbc
+color black, lig
+util.cnc
+orient bb
+select none
+
+dss
+
+create pent1, reduced, 1, 1
+create mono1, reduced & s. PROA, 1, 1
+create mono2, reduced & s. PROB, 1, 1
+create mono3, reduced & s. PROC, 1, 1
+create mono4, reduced & s. PROD, 1, 1
+create mono5, reduced & s. PROE, 1, 1
+
+
+Move and denature
+
+extract pent2, mono*
+delete mono*
+
+morph morphname, pent2, pent1, refinement=1, steps=100
+
+create fullmodel, morphname, 0, 1
+smooth reduced, 10, 10
+create fullmodel, reduced, 0, 101
+
+
+
+
+PART 4
+
+###################################################
+Movies on the command line with scenes
+###################################################
+With scenes you can change representations during the movie
+
+rein
+load structures.pse		# load a file with states for this one.
+remove hydrogen
+hide all
+bg_color white
+
+select lig, organic
+select bb, bb.
+select sc, sc. + name ca + /*//*/PRO`*/N 
+
+as cartoon, bb
+set cartoon_gap_cutoff, 0
+show sticks, sc + lig
+util.cbc
+color black, lig
+util.cnc
+orient bb
+select none
+dss 
+
+extract trimer, c. A
+extract dimer, c. B
+orient trimer
+select bb, bb.
+select sc, sc. + name ca + /*//*/PRO`*/N 
+
+orient
+
+###################################################
+ - - THIS CAN ACT AS A GOOD TEMPLATE!! - - 
+mview reset
+mset 1  x400 -380 x20
+set scene_animation,-1
+set scene_animation_duration,0
+set ray_trace_frames=0			# set this to 1 to get ray traced frames (takes a while)
+mview interpolate
+mview smooth
+
+disable dimer
+orient trimer
+hide sticks
+scene 001, store
+
+turn y, 90
+show lines, sc
+scene 002, store
+
+show sticks, sc
+scene 003, store
+
+set_view (\
+     0.206935033,   -0.007686321,    0.978324473,\
+    -0.978228033,    0.014468522,    0.207028300,\
+    -0.015746213,   -0.999865770,   -0.004524941,\
+     0.000000000,    0.000000000, -135.752883911,\
+    -1.243819475,    7.003369808,   15.669667244,\
+   107.028610229,  164.477157593,  -20.000000000 )
+scene 004, store
+enable dimer
+scene 005, store
+
+scene 001
+mview store, 1
+turn x, -120
+mview store, 50, power=1.0
+turn x, -120
+mview store, 100, power=1.0
+turn x, -120
+mview store, 150
+scene 002
+mview store, 195
+scene 003
+mview store, 200
+turn z, -120
+mview store, 250, power=1.0
+turn z, -120
+mview store, 300, power=1.0
+turn z, -120
+mview store, 350
+scene 004
+mview store, 395
+scene 005
+mview store, 400
+turn y, 180
+mview store, 600
+mview store, 798
+
+mview interpolate
+mview smooth
+rewind
+
+
+PART 4
+
+###################################################
+Movies and molecular transitions in powerpoint
+###################################################
+
+Show example in powerpoint and session file
+(Sorry youtubers, this bit has some unpublished work in it)
+
+PART 5
+
+###################################################
+Movies and molecular transitions in powerpoint
+###################################################
+
+Complex Movies Examples
+
+#################################################
+How the professionals do it!! (examples from the net)
+
+
+# setup PyMOL for the movie
+reinitialize
+set matrix_mode, 1
+set movie_panel, 1
+
+# load the PDBs
+fetch 1cll 1ggz, async=0
+
+# orient the scene
+as cartoon
+orient
+
+# make 100-frame movie
+mset 1 x100
+# goto frame 1
+frame 1
+
+# store the camera position and object
+# positions in frame 1
+mview store
+mview store, object=1cll
+mview store, object=1ggz
+
+# goto frame 90
+frame 90
+# align the two proteins
+super 1cll, 1ggz
+# we rezoom to center the camera on the 
+# two aligned proteins
+zoom
+# store the camera positions
+mview store
+# store the new object position(s)
+mview store, object=1cll
+mview store, object=1ggz
+
+# have PyMOL stitch together the scenes.
+mview reinterpolate
+mview reinterpolate, object=1cll
+mview reinterpolate, object=1ggz
+
+# rewind
+frame 1
+# get some popcorn!
+mplay
+
+#################################################
+Backbone walking
+
+# usual setup
+reinitialize
+set matrix_mode, 1
+set movie_panel, 1
+
+# fetch 1CLL to work on; this will only work on 1cll
+# or any other protein with 144 AAs starting at resi 4.
+fetch 1cll, async=0
+as sticks
+color marine
+util.cnc
+#zoom i. 1+2, 2
+
+# 10 frames per AA
+mset 1 x1440
+mview store
+
+# this code maps the zooming of
+# one AA and it's neighbor to 10 frames
+python
+for x in range(0,144):
+  cmd.frame((20*x)+1)
+  cmd.zoom( "n. CA and i. " + str(x) + "+" + str(x+1), 2)
+  cmd.mview("store")
+python end
+
+# goto the end and interpolate all the frames
+#frame 288
+mview store
+mview reinterpolate
+
+mplay

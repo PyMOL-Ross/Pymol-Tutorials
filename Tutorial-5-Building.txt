@@ -1,0 +1,198 @@
+########################################
+# Building with pymol                  #
+########################################
+
+########################################
+https://pymolwiki.org/index.php/Modeling_and_Editing_Structures
+########################################
+
+
+########################################
+# Make Peptide in Pymol (helix, sheet)
+refresh editing mode, 
+bond
+unbond
+
+2x peptides, fuse
+[ALT] WELIKE etc
+fab CHEMISTRY, ss=1
+# sequence view
+alter obj01, resi=str(int(resi)+6)
+
+pick n and c termini
+fuse
+
+fab CHEMISTRY, name-helix, ss=1 
+fab CHEMISTRY, name-anti, ss=2 
+fab CHEMISTRY, name-para, ss=3 
+
+Building with pymol
+The builder
+[ALT]ACD etc
+Joining structures
+Fuse
+
+
+# can use on whole proteins . . .
+rein
+fetch 3chb, type=pdb, async=0
+remove hetatm
+util.cbc
+split_chains 
+disable 3chb_F
+disable 3chb_G
+disable 3chb_H
+orient
+select 3chb_D & i. 103 
+orient sele
+show sticks, sele
+util.cnc
+remove 3chb_D & i. 103 & n. oxt
+select 3chb_D & i. 103 & n. c
+select c-term, 3chb_D & i. 103 & n. c
+
+select 3chb_E & i. 1
+orient sele
+show sticks, sele
+select n-term, 3chb_E & i. 1 and n. n
+
+fuse c-term, n-term
+
+# change phi and psi - NOT THE PEPTIDE BOND!!!
+now click in space > editing mode > [CTR]-right click phi or psi  > [CTR]-left click[HOLD] and drag to rotate component about bond
+
+Clean up nomenclature i. c. s. 
+alter 3chb_E & c. E, resi=str(int(resi)+103)
+alter 3chb_E & c. D, chain='E'
+
+
+
+########################################
+# Importing and Building Small Molecules
+Having trouble? --> use openbabel
+
+Builder widget
+
+rein
+Import Lewis-y from chemdraw
+Clean > Scuplt
+
+Make Lewix-y in Pymol
+
+
+########################################
+# Structural Transforations
+
+rein
+fetch 2chb, async=0
+remove ! polymer
+split_chains
+orient
+
+# axis
+rotate x, 90, 2chb_D
+# vector
+rotate [1,1,1],45,2chb_E
+
+translate [0,0,20], 2chb_D
+
+# rotations and translations are based on the camera angle
+orient
+rotate x, 90, 2chb_F
+turn y, 90
+rotate x, 90, 2chb_F
+
+# make a dimer
+orient
+create obj01, 2chb, 1, 0
+rotate x, 180, obj01
+translate [0,0,32], obj01
+color cyan, obj01
+as sticks
+util.cbc
+util.cnc
+alter obj01, segi='nseg'
+extract dimer, obj01 + 2chb
+
+delete 2chb* + obj01
+sort dimer
+sculpt_activate dimer, 
+sculpt_iterate all, cycles=1000
+sculpt_deactivate dimer
+flag free, all
+
+########################################
+
+rein
+fetch 2chb, async=0
+remove ! polymer
+split_chains
+orient
+util.cbc 
+
+select interE, br. 2chb_E within 5 of 2chb_D
+select interH, br. 2chb_H within 5 of 2chb_D
+
+translate [-20,20,0], 2chb_D
+
+show surface, interE
+show surface, interH
+color orange, inter* & r. ALA+CYS+PHE+ILE+LEU+MET+PRO+VAL+TRP & ! n. C+CA+N+O
+
+util.cnc
+color orange, inter* & r. ALA+CYS+PHE+ILE+LEU+MET+PRO+VAL+TRP & ! n. C+CA+N+O
+
+
+
+########################################
+# Single chained lumazine synthase
+rein
+fetch 1nqu, type=pdb, async=0
+remove ! polymer
+util.cbc
+split_chains 
+show sticks, sele
+color grey50
+util.chainbow c. A
+util.chainbow c. B
+
+as sticks
+util.cnc
+
+# select ‘N’ of i. 1 use [ALT]G, [ALT]S to make chain
+or fab GSGSGSGSGSGSGSG
+# use auto-sculpting
+# editing [CTL] drag
+
+
+flag free, all
+flag fix, all and not sele
+set auto_sculpt, on
+
+set sculpting, off
+set auto_sculpt, off
+flag free, all
+
+
+
+sort newmol
+select ligand, c. A
+flag fix, ligand
+sculpt_activate newmol 
+sculpt_iterate all, cycles=1000
+sculpt_deactivate newmol 
+flag free, all
+
+
+create obj02, obj01, 0, 1
+create obj03, obj01, 0, 1
+create obj04, obj01, 0, 1
+create obj05, obj01, 0, 1
+align obj02 & c. A, 1nqu_B
+align obj03 & c. A, 1nqu_C
+align obj04 & c. A, 1nqu_D
+align obj05 & c. A, 1nqu_E
+alter obj02, resi=str(int(resi)+200)
+alter obj03, resi=str(int(resi)+400)
+alter obj04, resi=str(int(resi)+600)
+alter obj05, resi=str(int(resi)+800)

@@ -1,0 +1,318 @@
+Before we start!
+#########################################
+# A quick recap
+#########################################
+fetch 3chb
+
+viewing mode
+L-click	: Make selection
+M-click	: Center Camera
+M-wheel	: z-plane-clipping
+R-click	: Open menu
+L-drag	: Camera rotate
+M-drag	: Camera translate
+R-drag	: Camera zoom
+
+Don't forget sequence view!
+
+orient
+
+fetch 2chb
+editing mode
+L-click	: Make pick
+M-click	: Center Camera
+R-click	: Open menu
+L-drag	: Camera rotate
+M-drag	: Camera translate
+R-drag	: Camera zoom
+Shift_L-drag	: Object rotate
+Shift_M-drag	: Object xy-translate
+Shift_R-drag	: Object z-translate
+as sticks
+control_L-drag	: atom xy-translate
+control_R-drag	: bond rotation
+
+rein
+
+#########################################
+# Pymol Selection
+#########################################
+
+https://pymolwiki.org/index.php/Selection_Algebra
+
+/object-name/segi-id/chain-id/resi-id/name-id
+object-name and segi and chain and resi-id and name-id
+            &   s.   &   c.    &   (r)i.      &   n.
+
+rein
+fetch 2chb			
+remove solvent + inorganic
+orient
+
+#########################################
+# Two ways to select
+#########################################
+
+molecular obj  			select /2chb			select 2chb
+molecule semi (sometimes)	select /2chb/A			select 2chb & segi A
+chain				select /2chb//D			select 2chb and chain D
+residue				select /2chb//D/PRO		select 2chb & c. D & i. 10
+residue				select /2chb//D/PRO`53 		select 2chb & c. D & i. 53 & r. PRO
+atom				select /2chb//D/10/ca		select 2chb & c. D & i. 10 & n. ca
+atom				select ////PRO/ca		select r. PRO & n. ca
+
+atom range			select /2chb//D/10-12/ca	select 2chb & c. D & i. 10-12 & n. ca
+atom range			select /2chb//D/6+8/c+o		select 2chb & c. D & i. 10+12 & n. ca
+
+select 2chb and chain D and resi 10+12 and not name ca
+select 2chb & c. D & i. 10+12 & ! n. n+o+c
+
+#########################################
+# Explained .. 
+#########################################
+
+object
+selection
+segment 	-	segi	-	s.
+chain		-	chain 	- 	c.
+residue number	-	resi	-	i.
+residue name 	-	resn	-	r.
+atom name	-	name	-	n.
+subdivision	-	&
+not 		-	!
+or		-	|
+additional	-	+
+
+select 2chb & c. D & i. 4 & i. 7	# does not work, no i. 7 in i. 4
+
+select 2chb & c. D & i. 4 | i. 7
+select 2chb & c. D & i. 4 + i. 7	# these are eqivalent here.
+select 2chb & c. D & i. 4+7		# not eqivalent
+
+### notice no spaces around '+' as addition selection
+### notice spaces around ' + ' as seperate selection	# will fail if incorrect
+
+#########################################
+# Example : view the locations for NHS-ester linkage.
+#########################################
+
+reinitialize 
+fetch 2chb, type=pdb
+remove ! polymer.protein
+color grey50
+bg_color white
+orient
+
+select all lysines on chain D
+select lysines, c. D & r. lys
+show sticks, lysines
+show sphere, lysine & n. NZ
+color blue, lysine & n. NZ
+
+select n-terminus of chain D
+select nres, br. first c. D & n. N
+show sticks, nres
+show sphere, nres & n. N
+color blue, nres & n. N
+
+show surface
+set transparency, 0.2
+
+#########################################
+# Example : view the ionic and hydrogen bonding potential of the protein
+#########################################
+
+reinitialize 
+fetch 2chb, type=pdb
+remove ! polymer.protein
+color grey50
+bg_color white
+orient
+
+#select charged residues
+select c. D & r. lys+arg
+show sticks, c. D & r. lys+arg+asp+glu
+color grey50
+color blue, c. D & r. lys+arg & ! n. c+ca+n+o+cb+cg+cd
+color red, c. D & r. asp+glu & ! n. c+ca+n+o+cb+cg
+show surface
+set transparency, 0.2
+
+#select hydrogen bond acceptors/doners
+color grey50
+color cyan, don. & c. D
+color magenta, acc. & c. D
+
+#########################################
+
+#########################################
+
+reinitialize 
+fetch 2chb, type=pdb
+util.cbc
+util.cnc
+bg_color white
+orient
+
+select groups		select all, 
+			select none, 
+			select r. HOH, 
+			select hetatm, 
+			select hetatm and not resn HOH
+			select organic
+			select hetatm & ! resn HOH
+
+			select polymer
+			select polymer.protein
+			select polymer.nucleic
+			select organic
+			select solvent
+
+secondary struture	ss	(ss h+s+l(loop))
+			select ss h
+			select ss s
+			select polymer.protein & ! ss h+s	# selects loop sections
+
+amino acid sequence 	select c. D & pepseq TEAK
+			select c. D & ps. TEAK
+
+protein 		select sc. 
+			select bb.
+			select don.
+			select acc.
+
+expand selection 	byobject
+			bysegi		bs.
+			bymolecule	bm. 
+			bychain		bc.
+			byresidue 	br. 
+		
+
+### Why should you get to know the selection syntax?
+
+### all functions work with the selection algebra!
+
+showas 		as cartoon, all
+show 		show sticks, sc. + n. CA + r. PRO & n. N
+color 		color red, ss h
+		show nb, solvent
+remove		remove solvent	
+		as lines, organic					
+zoom		zoom bm. first organic
+dist		dist temp, c. D & i. 4 & n. CA, c. E & i. 4 & n. CA
+		dist temp, c. D & i. 4, c. E & i. 4
+extract  	extract chainF, c. F # creates a new object of selection
+delete		delete chainF 						
+
+There are many
+https://pymol.org/pymol-command-ref.html
+#########################################
+# Example
+#########################################
+
+reinitialize 
+fetch 2chb, async=0
+orient 2chb
+remove solvent + inorganic
+color grey80, all
+color firebrick, ss h
+show sticks, c. D & ps. TEAK
+color black, c. D & ps. TEAK
+bg_color white
+zoom c. D & ps. TEAK, 5
+util.cnc
+dist dist01, /2chb/A/D/VAL`82/CA, /2chb/A/D/ALA`75/CA
+color magenta, dist01
+
+extract lig-a, organic & c. D
+zoom lig-a, 20
+
+
+#########################################
+# Examples
+#########################################
+
+reinitialize 
+fetch 2chb, async=0
+remove solvent + inorganic
+
+select bb, bb.
+select sc, sc. + n. CA + PRO/N 
+util.cbc
+as cartoon, bb
+show sticks, sc
+color grey50, organic
+util.cnc
+bg_color white
+orient 
+dist hbsc, organic, sc, mode=2
+dist hbbb, organic, bb, mode=2
+color black, hbsc
+color magenta, hbbb
+hide label
+
+# run as a script
+# why not try 1nqu?
+
+
+###########################################################################################################################
+# Exercise 1 - making some nice coiled coil structure
+###########################################################################################################################
+Problems and solutions
+
+Bruce wants a pretty picture of some coiled coils
+3r4a 4dzl 4dzm 4dzn 4pn8 4pn9 4pna
+
+fetch 3r4a 4dzl 4dzm 4dzn 4pn8 4pn9 4pna
+
+#####################################
+
+bg_color white
+as cartoon
+extra_fit n. ca, 3r4a, super
+set grid_mode
+
+# This doesn’t look good because of multiple models per asymmetric unit
+# This can be solved by generating the ‘biological unit’ commonly described in the pdb
+
+rein
+fetch 3r4a 4dzl 4dzm 4dzn 4pn8 4pn9 4pna, type=pdb1, async=0
+bg_color white
+as cartoon
+extra_fit n. ca, 3r4a, super
+set grid_mode
+
+# This is better but hasn’t fixed the problem with 4dzm, lets clean up
+# This pdb may have a problem with the biological unit descriptor, we can fix this manually
+
+split_states 4dzm 
+delete 4dzm
+create new, 4dzm_0001 + 4dzm_0002
+
+# this does not look right, this is a common problem in pymol 
+# all atom identifiers are identical, pymol cannot differentiate between identical atoms
+# we need to change the atom identifiers
+can change segment (s.)
+can chainge chain (c.)
+can change residue number (i.)
+
+delete new
+alter 4dzm_0002, segi="new0"
+create news, 4dzm_0001 + 4dzm_0002
+alter 4dzm_0002, chain="B"
+create newc, 4dzm_0001 + 4dzm_0002
+alter 4dzm_0002, resi=str(int(resi)+100)
+create newi, 4dzm_0001 + 4dzm_0002
+
+# ok lets align them
+create 4dzm, newc
+delete new* + 4dzm_*
+
+enable all
+set grid_mode
+extra_fit n. ca, 3r4a, super
+# go orthoscopic
+extra_fit n. ca, 3r4a, align
+extra_fit n. ca, 3r4a, cealign
+extra_fit n. ca, 3r4a, align
+ray

@@ -1,0 +1,202 @@
+####################################################
+# Saving by command line, and directory location
+
+opening via shortcut
+opening at file location
+
+pwd	where am i?
+ls	what is in this directory?
+cd	move into directory ('cd ..' to go backwards)
+
+save whatever.pdb, whatever
+
+####################################################
+# proximity selection https://pymolwiki.org/index.php/Selection_Algebra
+
+
+#select residues around binding site
+rein
+fetch 1nqu
+bg_color white
+util.cbc
+colour black, org
+util.cnc
+remove solvent + inorganic
+select ligA, bm. first org
+select close, br. polymer near_to 5 of ligA
+show sticks, close & sc. + close & n. CA + close & r. PRO & n. N
+
+# removing atoms outside of a distance
+rein
+fetch 5npp
+bg_color white
+util.cbc
+remove solvent + c. D
+remove br. polymer.nucleic gap 15
+remove br. polymer.protein gap 15
+ 
+# binding site surface visualisation 1
+rein
+fetch 1nqu
+bg_color white
+util.cbc
+colour black, org
+util.cnc
+remove solvent + inorganic
+select ligA, bm. first org
+select close, br. polymer near_to 5 of ligA
+show surface, close
+set transparency, 0.3
+
+# binding site surface visualisation 2
+rein
+fetch 1nqu
+bg_color white
+util.cbc
+colour black, org
+util.cnc
+remove solvent + inorganic
+select ligA, bm. first org
+select prot, polymer
+set surface_carve_cutoff, 4.5
+set surface_carve_selection, ligA
+set surface_carve_normal_cutoff, -0.1
+show surface, prot within 8 of ligA
+set two_sided_lighting
+set transparency, 0.5
+orient ligA
+zoom ligA, 2
+select close, br. polymer near_to 5 of ligA
+show sticks, close & sc. + close & n. CA + close & r. PRO & n. N
+set surface_color, white
+distance hbond, ligA, prot, mode=2
+color magenta, hbond
+
+
+####################################################
+# Crystal lattice expansion and contacts.
+
+reinitialize 
+fetch 1wl9, async=0
+alter 1wl9, segi='rpdb'
+remove solvent + inorganic
+bg_color white
+
+symexp sym, 1wl9, (1wl9), 4
+alter sym*, segi='crys'
+color grey90
+color black, 1wl9
+show sticks
+
+select loop, 1wl9 & ps. LYRPGTSI
+color green, loop
+alter loop, segi='loop'
+
+select near, br. 1wl9 near_to 5 of loop
+color cyan, near
+alter near, segi='near'
+
+select crys, br. loop around 5 & ! 1wl9
+color hotpink, crys
+alter crys, segi='crys'
+
+orient loop
+zoom loop, 10
+util.cnc
+
+select removeme, br. loop gap 15
+remove removeme & ! 1wl9
+deselect
+
+
+####################################################
+# getting data from pymol (Make a ramachandran plot)
+
+rein
+fetch 3chb
+
+chain=D
+residues=$(grep " D " 3chb.pdb | grep ATOM | grep ' CA ' | wc -l )
+echo "fetch 3chb, async=0
+f=open('phipsi.txt','w')" > phipsi.pml
+
+for i in $(seq 1 $residues) ; do 
+sele1=$i
+sele2=$(($i + 1))
+sele3=$(($sele2 + 1))
+echo "
+select sele1, c. D & i. $sele1
+select sele2, c. D & i. $sele2
+select sele3, c. D & i. $sele3" >> phipsi.pml 
+echo '
+phi=cmd.get_dihedral("'sele1' & n. C", "'sele2' & n. N", "'sele2' & n. CA", "'sele2' & n. C")
+psi=cmd.get_dihedral("'sele2' & n. N", "'sele2' & n. CA", "'sele2' & n. C", "'sele3' & n. N") 
+f.write("'$sele2-phi' %s\n" % phi)
+f.write("'$sele2-psi' %s\n" % psi)' >> phipsi.pml 
+done
+echo "f.close()" >> phipsi.pml 
+pymoll -qc phipsi.pml 
+
+grep phi phipsi.txt | awk '{print $2}' > a.tx
+grep psi phipsi.txt | awk '{print $2}' > b.tx
+dos2unix a.tx
+dos2unix b.tx
+paste -d',' a.tx b.tx > phipsi.csv
+excel phipsi.csv
+
+###########
+
+Simple stuff
+echo " 
+f=open('outfile.tx','w')
+cnt=cmd.centerofmass("'"i. '$comres'"'") " >> fetch.pml
+echo 'f.write("'oricapcom' %s\n" % cnt)' >> fetch.pml
+echo "f.close()
+
+Simple stuff
+
+f=open('outfile.tx','w')
+cnt=cmd.centerofmass("'"i. '$comres'"'") 
+echo 'f.write("'oricapcom' %s\n" % cnt)
+echo "f.close()
+
+
+
+####################################################
+# automatic secondary structure detection
+
+dss
+rebuild
+
+####################################################
+# show electron density
+
+wget https://edmaps.rcsb.org/maps/3ueq_2fofc.dsn6
+wget https://edmaps.rcsb.org/maps/3ueq_fofc.dsn6
+
+fetch 3ueq_A, type=pdb, async=0
+load 3ueq_2fofc.dsn6
+load 3ueq_fofc.dsn6
+select search-seq, 3ueq_A & ps. WILSN
+orient search-seq
+color black, search-seq
+bg_color white
+util.cnc
+deselect
+as sticks, polymer
+isomesh 3ueq-2fofc_1.5, 3ueq_2fofc, 1.5
+color blue, 3ueq-2fofc_1.5
+isomesh 3ueq-fofc_3, 3ueq_fofc, 3
+isomesh 3ueq-fofc_-3, 3ueq_fofc, -3
+color green, 3ueq-fofc_3
+color red, 3ueq-fofc_-3
+map_trim 3ueq*, search-seq, 4
+orient search-seq
+deselect
+mset 1 -360
+mview store, 1
+turn y, -180
+mview store, 180
+turn y, -180
+mview store, 360
+mplay 
